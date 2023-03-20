@@ -6,9 +6,9 @@ import argparse
 import logging
 import time
 
-from pganonymize.constants import DATABASE_ARGS, DEFAULT_SCHEMA_FILE
-from pganonymize.providers import provider_registry
-from pganonymize.utils import anonymize_tables, create_database_dump, get_connection, load_config, truncate_tables
+from constants import DATABASE_ARGS, DEFAULT_SCHEMA_FILE
+from providers import provider_registry
+from utils import anonymize_tables, create_database_dump, get_connection, load_config, truncate_tables
 
 
 def get_pg_args(args):
@@ -46,6 +46,7 @@ def get_arg_parser():
                         default=False)
     parser.add_argument('--dump-file', help='Create a database dump file with the given name')
     parser.add_argument('--init-sql', help='SQL to run before starting anonymization', default=False)
+    parser.add_argument('--after-sql', help='SQL to run after the anonymization', default=False)
 
     return parser
 
@@ -78,6 +79,14 @@ def main(args):
 
     if not args.dry_run:
         connection.commit()
+
+        if args.after_sql:
+            cursor = connection.cursor()
+            logging.info('Executing after sql {}'.format(args.after_sql))
+            cursor.execute(args.after_sql)
+            cursor.close()
+            connection.commit()
+
     connection.close()
 
     end_time = time.time()

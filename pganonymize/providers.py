@@ -7,7 +7,7 @@ from uuid import uuid4
 
 from faker import Faker
 
-from pganonymize.exceptions import InvalidProvider, InvalidProviderArgument, ProviderAlreadyRegistered
+from exceptions import InvalidProvider, InvalidProviderArgument, ProviderAlreadyRegistered
 
 fake_data = Faker()
 
@@ -113,8 +113,15 @@ class FakeProvider(Provider):
     regex_match = True
 
     def alter_value(self, value):
+        if value == '':
+            return ''
         func_name = self.kwargs['name'].split('.', 1)[1]
         func_kwargs = self.kwargs.get('kwargs', {})
+        if 'deterministic' in self.kwargs and bool(self.kwargs['deterministic']):
+            random.seed(value)
+            Faker.seed(random.random())
+        else:
+            Faker.seed()
         try:
             func = operator.attrgetter(func_name)(fake_data)
         except AttributeError as exc:
